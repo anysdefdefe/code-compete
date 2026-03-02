@@ -14,14 +14,50 @@ datasource db {
 
 model User {
   id               String      @id @default(cuid())
-  githubUsername   String      @unique
+
+// Standard Auth.js fields (GitHub will fill these automatically)
+  name             String?
+  email            String?     @unique
+  emailVerified    DateTime?
+  image            String?
+
+  githubUsername   String?     @unique // Changed to optional to prevent login crashes
   leetcodeUsername String?     @unique              // Optional initially
   
   // Relationships
+  accounts         Account[]   // Required for Auth.js
+  sessions         Session[]   // Required for Auth.js
   groups           Group[]     
   dailyStats       DailyStat[] 
   
   createdAt        DateTime    @default(now())
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @map("user_id")
+  type               String
+  provider           String
+  providerAccountId  String  @map("provider_account_id")
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Group {
